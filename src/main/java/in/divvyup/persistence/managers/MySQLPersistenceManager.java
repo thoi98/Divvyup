@@ -1,13 +1,12 @@
 package in.divvyup.persistence.managers;
 
-import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -19,12 +18,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializer;
 import in.divvyup.DivvyupApplication;
 import in.divvyup.persistence.PersistenceManager;
 import in.divvyup.persistence.model.BaseModel;
+import in.divvyup.pojo.Metadata;
 import in.divvyup.util.DateTimeUtil;
 
 @Repository (value = "mysql")
@@ -45,25 +44,14 @@ public class MySQLPersistenceManager implements PersistenceManager {
         }
     }
 
-    private static final Gson GSON = new GsonBuilder().serializeNulls().registerTypeAdapter(ZonedDateTime.class, new TypeAdapter<ZonedDateTime>() {
-        @Override
-        public void write(JsonWriter out, ZonedDateTime value) throws IOException {
-            if (Objects.nonNull(value)) {
-                out.value(DateTimeUtil.formattedDate(value, "yyyy-MM-dd HH:mm:ss"));
-            } else {
-                out.value("null");
-            }
-        }
-
-        @Override
-        public ZonedDateTime read(JsonReader in) throws IOException {
-            if (Objects.nonNull(in)) {
-                return ZonedDateTime.parse(in.nextString());
-            } else {
-                return null;
-            }
-        }
-    }).enableComplexMapKeySerialization().create();
+    public static final Gson GSON =
+            new GsonBuilder().serializeNulls().registerTypeAdapter(ZonedDateTime.class, (JsonSerializer<ZonedDateTime>) (src, typeOfSrc, context) -> {
+                                 return context.serialize(Optional.ofNullable(src).map(x -> DateTimeUtil.formattedDate(x, "yyyy-MM-dd HH:mm:ss")).orElse(null));
+                             }).registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (src, typeOfSrc, context) -> {
+                                 return Optional.ofNullable(src).map(x -> ZonedDateTime.parse(x.getAsString())).orElse(null);
+                             }).registerTypeAdapter(Metadata.class,
+                                     (JsonSerializer<Metadata>) (src, typeOfSrc, context) -> context.serialize(src.getStringData()))
+                             .enableComplexMapKeySerialization().create();
 
     @Override
     public <T extends BaseModel> void save(T object) {
