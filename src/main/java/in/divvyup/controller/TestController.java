@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import in.divvyup.annotation.NoLogin;
 import in.divvyup.persistence.dao.TestDao;
 import in.divvyup.persistence.model.Test;
 

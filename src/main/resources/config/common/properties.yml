@@ -1,2 +1,6 @@
 database:
   driverClassName: com.mysql.jdbc.Driver
+auth:
+  useSecureCookie: true
+  cookieName: dvup-sid
+  cookieDomain: '.divvyup.in'
